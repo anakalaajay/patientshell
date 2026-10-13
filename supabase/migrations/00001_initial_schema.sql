@@ -48,7 +48,8 @@ create table public.medical_visits (
   summary text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  check (ended_at is null or started_at is null or ended_at >= started_at)
+  check (ended_at is null or started_at is null or ended_at >= started_at),
+  unique (id, patient_id)
 );
 
 create table public.medical_documents (
@@ -66,13 +67,15 @@ create table public.medical_documents (
   document_date date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (storage_path)
+  unique (storage_path),
+  unique (id, patient_id),
+  foreign key (visit_id, patient_id) references public.medical_visits(id, patient_id)
 );
 
 create table public.extracted_document_data (
   id uuid primary key default gen_random_uuid(),
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
-  document_id uuid not null references public.medical_documents(id) on delete cascade,
+  document_id uuid not null,
   extracted_data jsonb not null default '{}'::jsonb,
   extraction_model text,
   confidence numeric(5,4) check (confidence is null or confidence between 0 and 1),
@@ -82,14 +85,14 @@ create table public.extracted_document_data (
   reviewed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (document_id, id)
+  foreign key (document_id, patient_id) references public.medical_documents(id, patient_id) on delete cascade
 );
 
 create table public.lab_records (
   id uuid primary key default gen_random_uuid(),
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
-  document_id uuid references public.medical_documents(id) on delete set null,
-  visit_id uuid references public.medical_visits(id) on delete set null,
+  document_id uuid,
+  visit_id uuid,
   test_name text not null,
   result_value text,
   unit text,
@@ -97,7 +100,9 @@ create table public.lab_records (
   result_flag text check (result_flag is null or result_flag in ('low', 'normal', 'high', 'critical', 'unknown')),
   observed_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  foreign key (document_id, patient_id) references public.medical_documents(id, patient_id),
+  foreign key (visit_id, patient_id) references public.medical_visits(id, patient_id)
 );
 
 create table public.medication_records (
@@ -117,7 +122,9 @@ create table public.medication_records (
     check (status in ('active', 'paused', 'completed', 'discontinued', 'unknown')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  check (ended_on is null or started_on is null or ended_on >= started_on)
+  check (ended_on is null or started_on is null or ended_on >= started_on),
+  foreign key (document_id, patient_id) references public.medical_documents(id, patient_id),
+  foreign key (visit_id, patient_id) references public.medical_visits(id, patient_id)
 );
 
 create table public.review_packages (
@@ -130,13 +137,14 @@ create table public.review_packages (
     check (status in ('draft', 'shared', 'in_review', 'completed', 'revoked', 'expired')),
   expires_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (id, patient_id)
 );
 
 -- Explicit grants are per package; a doctor receives no access without a live grant.
 create table public.review_package_doctors (
   id uuid primary key default gen_random_uuid(),
-  package_id uuid not null references public.review_packages(id) on delete cascade,
+  package_id uuid not null,
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
   doctor_id uuid not null references public.doctor_profiles(user_id) on delete cascade,
   granted_by uuid not null references public.user_profiles(id) on delete restrict,
@@ -146,30 +154,35 @@ create table public.review_package_doctors (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (package_id, doctor_id),
-  check (expires_at is null or expires_at > granted_at)
+  check (expires_at is null or expires_at > granted_at),
+  foreign key (package_id, patient_id) references public.review_packages(id, patient_id) on delete cascade
 );
 
 create table public.review_package_documents (
   id uuid primary key default gen_random_uuid(),
-  package_id uuid not null references public.review_packages(id) on delete cascade,
+  package_id uuid not null,
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
-  document_id uuid not null references public.medical_documents(id) on delete cascade,
+  document_id uuid not null,
   created_at timestamptz not null default now(),
-  unique (package_id, document_id)
+  unique (package_id, document_id),
+  foreign key (package_id, patient_id) references public.review_packages(id, patient_id) on delete cascade,
+  foreign key (document_id, patient_id) references public.medical_documents(id, patient_id) on delete cascade
 );
 
 create table public.review_package_visits (
   id uuid primary key default gen_random_uuid(),
-  package_id uuid not null references public.review_packages(id) on delete cascade,
+  package_id uuid not null,
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
-  visit_id uuid not null references public.medical_visits(id) on delete cascade,
+  visit_id uuid not null,
   created_at timestamptz not null default now(),
-  unique (package_id, visit_id)
+  unique (package_id, visit_id),
+  foreign key (package_id, patient_id) references public.review_packages(id, patient_id) on delete cascade,
+  foreign key (visit_id, patient_id) references public.medical_visits(id, patient_id) on delete cascade
 );
 
 create table public.temporary_access_tokens (
   id uuid primary key default gen_random_uuid(),
-  package_id uuid not null references public.review_packages(id) on delete cascade,
+  package_id uuid not null,
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
   token_hash text not null unique,
   expires_at timestamptz not null,
@@ -178,23 +191,26 @@ create table public.temporary_access_tokens (
   created_by uuid not null references public.user_profiles(id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  check (expires_at > created_at)
+  check (expires_at > created_at),
+  foreign key (package_id, patient_id) references public.review_packages(id, patient_id) on delete cascade
 );
 
 create table public.patient_questions (
   id uuid primary key default gen_random_uuid(),
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
-  package_id uuid references public.review_packages(id) on delete set null,
+  package_id uuid,
   question text not null,
   status text not null default 'open'
     check (status in ('open', 'in_progress', 'answered', 'closed')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (id, patient_id),
+  foreign key (package_id, patient_id) references public.review_packages(id, patient_id)
 );
 
 create table public.doctor_reviews (
   id uuid primary key default gen_random_uuid(),
-  package_id uuid not null references public.review_packages(id) on delete cascade,
+  package_id uuid not null,
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
   doctor_id uuid not null references public.doctor_profiles(user_id) on delete restrict,
   summary text,
@@ -204,18 +220,22 @@ create table public.doctor_reviews (
   reviewed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (package_id, doctor_id)
+  unique (package_id, doctor_id),
+  unique (id, patient_id),
+  foreign key (package_id, patient_id) references public.review_packages(id, patient_id) on delete cascade
 );
 
 create table public.doctor_review_resolutions (
   id uuid primary key default gen_random_uuid(),
-  review_id uuid not null references public.doctor_reviews(id) on delete cascade,
-  question_id uuid references public.patient_questions(id) on delete set null,
+  review_id uuid not null,
+  question_id uuid,
   patient_id uuid not null references public.patient_profiles(user_id) on delete cascade,
   doctor_id uuid not null references public.doctor_profiles(user_id) on delete restrict,
   resolution text not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  foreign key (review_id, patient_id) references public.doctor_reviews(id, patient_id) on delete cascade,
+  foreign key (question_id, patient_id) references public.patient_questions(id, patient_id)
 );
 
 create table public.system_audit_events (
