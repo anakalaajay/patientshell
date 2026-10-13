@@ -1,53 +1,38 @@
 # Patientshell Project Progress
 
 ## Phase 1 — Project definition (complete)
+- Selected canonical repository: \`mahendradalavai/patientshell\`.
+- Selected Supabase project reference: \`djwuoubtiagupjenlwml\`.
 
-- Established the Patientshell project overview and initial development direction.
-- Selected the canonical repository: mahendradalavai/patientshell.
-- Selected Supabase project reference: djwuoubtiagupjenlwml.
-- Phase 1 documentation was reviewed and merged by the repository owner.
+## Phase 2 — Foundation (complete; merged)
+- React, TypeScript, Tailwind frontend and FastAPI backend foundation.
 
-## Phase 2 — Fresh project foundation (complete)
+## Phase 3 — Database schema and authentication (complete; merged)
+- Core patient/doctor profiles, visits, documents, extracted data, labs, medications, review packages, grants, questions, reviews/resolutions, and audit events.
+- Supabase Auth bearer-token verification and patient ownership/RLS policies.
 
-- Added a Vite + React + TypeScript frontend under \`frontend/\`.
-- Configured Tailwind CSS v4 using the official Vite plugin.
-- Added a FastAPI application under \`backend/\` with \`GET /api/health\`.
-- Added backend dependencies and frontend/backend \`.env.example\` templates.
-- Added root \`.gitignore\` rules for local secrets, dependencies, and build output.
-- The Phase 2 foundation was reviewed and merged into \`main\`.
+## Phase 4 — Patient portal (complete; merged in PR #4)
+- Supabase session context, patient route guard, dashboard, profile, timeline, questions, and protected patient APIs.
 
-## Phase 3 — Database schema, migrations, and Auth (complete; merged)
+## Phase 5 — Document processing and OCR (complete; merged in PR #5)
+- PDF/JPG/PNG validation, 15 MiB limit, digital PDF extraction, OpenCV preprocessing, Tesseract OCR interface, and scanned-PDF fallback.
+- Conservative rules for report dates, selected lab tests, and medication name/dose patterns; uncertain values flagged for human review with source page/quote/coordinates when available.
+- Patient document upload/list/review endpoints, private Storage bucket policies, document management UI, and audit-trigger support.
+- Migration \`00004_document_storage_policies.sql\` must be applied and validated separately in the intended Supabase environment.
 
-- PR #3 was reviewed and merged into \`main\`.
-- Added migrations for identity, patient/doctor profiles, visits, documents, extracted data, labs, medications, review packages, explicit doctor grants, questions, reviews/resolutions, and audit events.
-- Added row-level security, patient ownership, package-scoped doctor access, and anonymous-session restrictions.
-- Added verified Supabase bearer-token authentication and protected \`GET /api/me\`.
-- Live migration application must be confirmed separately.
-
-## Phase 4 — Patient portal (complete; merged)
-
-- PR #4 was reviewed and merged by the project owner into \`main\`.
-- Added persisted Supabase Auth sessions, sign-up/sign-in, and patient-only route guards.
-- Added dashboard, demographic profile view/update, chronological medical timeline, review package summary, and patient question submission/status/resolution views.
-- Added protected profile, timeline, and question endpoints.
-- Added \`00003_auth_profile_provisioning.sql\` to provision a patient-role application profile on Auth signup. Role assignment is server-side and not taken from user metadata.
-
-## Phase 5 — Medical document processing and OCR intelligence (implementation on review branch)
-
-- Created \`phase-5/document-intelligence\` from the latest \`main\`.
-- Added PDF/JPG/PNG validation and a 15 MiB size limit.
-- Added digital PDF extraction with pdfplumber, OpenCV image enhancement, Tesseract OCR fallback, and scanned-PDF rendering through pdf2image when available.
-- Added conservative rule-based extraction for dates, selected common lab test results, and medication name/dose patterns. Ambiguous dates, missing units, OCR issues, and medication matches are flagged for human review rather than silently guessed.
-- Extracted items retain page number, source quote, extraction method, and available word-coordinate bounding boxes.
-- Added patient-only document upload/list/extracted-data/review endpoints; storage uses a private \`medical-records\` bucket and JWT-scoped Supabase clients.
-- Added human confirm/reject/correct workflow and audit event metadata.
-- Added patient document uploader, upload progress, status badges, extracted item review, and timeline navigation.
+## Phase 6 — Doctor portal, review packages, and clinical comparison (implementation on review branch)
+- Created \`phase-6/doctor-portal\` from the latest \`main\` after PR #5 was merged by the project owner.
+- Added \`backend/app/api/routes/doctor.py\` and registered the doctor router in \`backend/app/main.py\`.
+- Added \`GET /api/doctor/queue\`, \`GET /api/doctor/reviews/{package_id}\`, \`POST /api/doctor/reviews/{package_id}/notes\`, \`POST /api/doctor/reviews/{package_id}/resolve\`, and \`POST /api/doctor/questions/{question_id}/respond\`.
+- Doctor API checks the database-backed \`user_profiles.role = 'doctor'\` and requires a \`doctor_profiles\` row with \`verification_status = 'verified'\`. Each package endpoint additionally checks a non-revoked grant for that doctor and rejects expired grants; package-linked queries are constrained to the grant's patient and package membership.
+- Optional temporary review tokens are SHA-256 hashed before validation. Migration \`00005_doctor_review_access.sql\` adds a restricted database validator that checks token expiry, revocation, the doctor's verified role, and a current package grant. Token attempts are rate-limited in the API process; production deployments with multiple workers should replace this with a shared rate limiter.
+- Added database audit triggers for doctor review changes and patient question responses. The migration must be applied before the temporary token RPC is available.
+- Added doctor-only frontend route guard and routes \`/doctor\`, \`/doctor/reviews/:packageId\`, assigned review queue, urgency/grant display, document/extracted-entity workspace, longitudinal lab comparison, clinical notes/recommendations, question responses, and resolution controls.
+- Comparison groups by exact test label and only treats values as directly comparable when units are present and match and reference-range context is consistent. No unit conversion or automated diagnosis is performed; mismatched/missing units and context are flagged for clinician review.
 
 ## Verification and deployment notes
-
-- Phase 5 changes are on \`phase-5/document-intelligence\`; do not merge into \`main\` until reviewed and approved.
-- \`supabase/migrations/00004_document_storage_policies.sql\` is committed as a migration file only; it has not been applied to the live Supabase project.
-- The OCR engine requires the Tesseract system binary. Scanned PDF OCR also requires Poppler for pdf2image; if these are missing, extraction errors are surfaced and the document is marked failed rather than fabricating results.
-- Configure \`SUPABASE_URL\` and \`SUPABASE_ANON_KEY\` for the backend and \`VITE_API_BASE_URL\` if the API is hosted separately from the frontend.
-- Install backend requirements and run tests, then run \`npm install\` and \`npm run build\` in \`frontend/\`. Network access previously failed in the execution environment, so build/test results must be verified in CI or a connected development environment.
-- Before production, test patient ownership, Storage RLS, upload size/type rejection, extraction traceability, low-confidence review flags, and audit logs with separate patient accounts.
+- Phase 6 code is on \`phase-6/doctor-portal\`; do not merge until the project owner approves the pull request.
+- No Supabase migration has been applied to the live project from this implementation.
+- Automated backend tests and frontend build have not been run in this environment. Validate with CI before production use.
+- Test non-doctor denial, unverified doctor denial, revoked/expired grants, invalid/expired/revoked temporary tokens, rate limiting, package membership boundaries, audit triggers, question response access, and comparison handling for missing/different units.
+- Configure backend \`SUPABASE_URL\` and \`SUPABASE_ANON_KEY\`, frontend \`VITE_API_BASE_URL\`, and install/verify OCR system dependencies as documented in Phase 5.
