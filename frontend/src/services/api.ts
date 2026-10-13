@@ -6,19 +6,19 @@ export async function apiRequest<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(init.headers)
-  headers.set('Authorization', \`Bearer \${accessToken}\`)
+  headers.set('Authorization', `Bearer ${accessToken}`)
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
 
-  const response = await fetch(\`\${API_BASE_URL}\${path}\`, { ...init, headers })
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
   const payload: unknown = await response.json().catch(() => null)
 
   if (!response.ok) {
     const detail =
       payload && typeof payload === 'object' && 'detail' in payload
         ? String((payload as { detail: unknown }).detail)
-        : \`Request failed (\${response.status})\`
+        : `Request failed (${response.status})`
     throw new Error(detail)
   }
 
