@@ -82,3 +82,10 @@
 - Packaging and documentation are prepared in Phase 9; project closure is pending until PR #9 is reviewed and merged by the repository owner.
 - Closure requires successful backend tests, frontend TypeScript/Vite build, container build/run and health check, staging verification of Supabase Auth/RLS/private Storage/doctor grants/OCR/AI, and owner sign-off.
 - No production Supabase migration was executed by this branch, no production deployment was triggered, and no regulatory/security certification is claimed.
+
+
+## Phase 10 follow-up — OpenRouter free-model adapter (review branch)
+- Added an OpenRouter-compatible Chat Completions adapter to Dr. Anya, including optional attribution headers and the existing JSON-output requirement.
+- Recommended zero-token-price prototype model setting: AI_PROVIDER=openrouter and AI_MODEL_NAME=openrouter/free, which routes to currently available free models instead of pinning a potentially unavailable model ID.
+- Added adapter tests and documented current free-tier limitations and privacy considerations. Free-tier model availability, quotas and provider data handling can change; do not send identifiable health information to free third-party inference without an explicit privacy/security and contractual review.
+- No key is committed or added to frontend variables. Configure a newly rotated OpenRouter key only in server-side secret settings. Phase 10 operational closure remains pending CI and production/staging privacy approval.
