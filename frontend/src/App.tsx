@@ -4,6 +4,7 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import PortalLayout from './components/PortalLayout'
 import AuthPage from './pages/AuthPage'
 import PatientDashboard from './pages/PatientDashboard'
+import PatientDocumentsPage from './pages/PatientDocuments'
 import PatientProfilePage from './pages/PatientProfile'
 import PatientQuestionsPage from './pages/PatientQuestions'
 import PatientTimelinePage from './pages/PatientTimeline'
@@ -44,6 +45,7 @@ function AppRoutes() {
           <Route index element={<PatientDashboard />} />
           <Route path="profile" element={<PatientProfilePage />} />
           <Route path="timeline" element={<PatientTimelinePage />} />
+          <Route path="documents" element={<PatientDocumentsPage />} />
           <Route path="questions" element={<PatientQuestionsPage />} />
         </Route>
       </Route>
