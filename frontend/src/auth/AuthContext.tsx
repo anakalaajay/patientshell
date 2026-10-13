@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!active) return
       setSession(nextSession)
+      setProfileLoading(Boolean(nextSession))
       setLoading(false)
     })
 
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!active) return
       if (error) setProfileError(error.message)
       setSession(data.session)
+      setProfileLoading(Boolean(data.session))
       setLoading(false)
     })
 
