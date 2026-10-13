@@ -207,7 +207,15 @@ def get_review_workspace(
         extracted = client.table("extracted_document_data").select(
             "id, extracted_data, confidence, review_status, created_at"
         ).eq("document_id", document_id).eq("patient_id", patient_id).order("created_at").execute().data or []
-        documents.append({**document, "extracted_items": extracted})
+        try:
+            signed = client.storage.from_("medical-records").create_signed_url(document["storage_path"], 300)
+            signed_url = signed.get("signedURL") or signed.get("signedUrl")
+            if signed_url and signed_url.startswith("/"):
+                base = os.getenv("SUPABASE_URL", "").rstrip("/")
+                signed_url = base + "/storage/v1" + signed_url
+        except Exception:
+            signed_url = None
+        documents.append({**document, "signed_url": signed_url, "extracted_items": extracted})
 
     package_visits = client.table("review_package_visits").select(
         "visit_id"
@@ -232,10 +240,33 @@ def get_review_workspace(
     questions = client.table("patient_questions").select(
         "id, question, status, created_at, updated_at"
     ).eq("patient_id", patient_id).eq("package_id", package_id).order("created_at").execute().data or []
+    comparison_rows = list(labs or [])
+    parsed_medications = list(medications or [])
+    for document in documents:
+        for item in document["extracted_items"]:
+            entity = item.get("extracted_data") or {}
+            source = entity.get("source") or {}
+            if entity.get("entity_type") == "lab_result" and entity.get("value") is not None:
+                quote = str(source.get("quote") or "")
+                # The extraction schema does not guarantee a normalized analyte label.
+                # Keep the source line as the key instead of guessing a test name.
+                test_name = quote.strip() or "Unlabelled extracted lab result"
+                comparison_rows.append({
+                    "test_name": test_name, "result_value": entity.get("value"),
+                    "unit": entity.get("unit"), "reference_range": entity.get("reference_range"),
+                    "observed_at": document.get("document_date"), "document_id": document["id"],
+                })
+            elif entity.get("entity_type") == "medication":
+                parsed_medications.append({
+                    "id": item["id"], "document_id": document["id"],
+                    "medication_name": entity.get("value") or "Uncertain medication",
+                    "dosage": source.get("dosage"), "route": source.get("route"),
+                    "frequency": source.get("frequency"), "status": "unverified extracted item",
+                })
     return {
         "package": package, "grant": grant, "documents": documents, "timeline": timeline,
-        "labs": labs or [], "medications": medications or [], "review": review,
-        "questions": questions, "comparison": compare_labs(labs or []),
+        "labs": comparison_rows, "medications": parsed_medications, "review": review,
+        "questions": questions, "comparison": compare_labs(comparison_rows),
     }
 
 
@@ -295,9 +326,6 @@ def save_review_note(
             "id, package_id, summary, recommendations, status, updated_at"
         ).single().execute()
         review_id = result.data["id"]
-    _audit(client, profile["id"], patient_id, "doctor_review.note_saved", package_id, {
-        "review_id": review_id, "note_type": note.note_type,
-    })
     return {"review": result.data}
 
 
@@ -331,9 +359,6 @@ def resolve_review(
     client.table("review_packages").update({
         "status": package_status, "updated_at": now
     }).eq("id", package_id).eq("patient_id", patient_id).execute()
-    _audit(client, profile["id"], patient_id, "doctor_review.resolved" if package_status == "completed" else "doctor_review.needs_information", package_id, {
-        "review_id": result.data["id"], "status": request_body.status,
-    })
     return {"review": result.data, "package_status": package_status}
 
 
@@ -370,7 +395,4 @@ def respond_to_patient_question(
     client.table("patient_questions").update({
         "status": "answered", "updated_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", question_id).eq("patient_id", question["patient_id"]).execute()
-    _audit(client, profile["id"], question["patient_id"], "patient_question.responded", question_id, {
-        "package_id": question["package_id"], "resolution_id": result.data["id"],
-    })
     return {"response": result.data, "question_status": "answered"}
