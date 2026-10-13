@@ -65,8 +65,12 @@ def _safe_facts(entities: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _provider_completion(provider: str, api_key: str, model: str, prompt: str) -> str:
     """Small provider adapter; local endpoints use an OpenAI-compatible API."""
-    if provider in {"openai", "local"}:
-        base = os.getenv("AI_BASE_URL", "").rstrip("/") if provider == "local" else "https://api.openai.com/v1"
+    if provider in {"openai", "local", "openrouter"}:
+        if provider in {"local", "openrouter"}:
+            default_base = "https://openrouter.ai/api/v1" if provider == "openrouter" else ""
+            base = os.getenv("AI_BASE_URL", default_base).rstrip("/")
+        else:
+            base = "https://api.openai.com/v1"
         if not base:
             raise RuntimeError("Local AI provider requires AI_BASE_URL.")
         body = json.dumps({
@@ -82,6 +86,13 @@ def _provider_completion(provider: str, api_key: str, model: str, prompt: str) -
             f"{base}/chat/completions", data=body, method="POST",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         )
+        if provider == "openrouter":
+            site_url = os.getenv("OPENROUTER_SITE_URL", "").strip()
+            app_name = os.getenv("OPENROUTER_APP_NAME", "Patientshell Dr. Anya").strip()
+            if site_url:
+                request.add_header("HTTP-Referer", site_url)
+            if app_name:
+                request.add_header("X-Title", app_name)
     elif provider == "anthropic":
         body = json.dumps({
             "model": model,
