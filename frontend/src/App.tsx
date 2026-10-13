@@ -20,6 +20,7 @@ function HomeRedirect() {
   }
   if (!session) return <Navigate to="/auth" replace />
   if (profile?.role === 'patient') return <Navigate to="/patient" replace />
+  if (profile?.role === 'doctor') return <Navigate to="/doctor" replace />
   if (profile) return <Navigate to="/not-authorized" replace />
   return <Navigate to="/auth" replace />
 }
