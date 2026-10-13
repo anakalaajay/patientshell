@@ -61,6 +61,7 @@ class ExtractedEntity:
     needs_human_review: bool
     source: dict[str, Any]
     review_reason: str | None = None
+    test_name: str | None = None
 
 
 def _source(page: int, text: str, bbox: dict[str, float] | None = None, method: str = "text") -> dict[str, Any]:
@@ -184,6 +185,32 @@ RESULT_PATTERN = re.compile(
 )
 
 
+def normalize_test_name(label: str | None) -> str:
+    """Canonicalize only known analyte aliases; preserve unknown labels without guessing."""
+    raw = " ".join((label or "").strip().lower().split())
+    raw = re.sub(r"[^a-z0-9]+", " ", raw).strip()
+    aliases = {
+        "hb": "hemoglobin", "hgb": "hemoglobin", "haemoglobin": "hemoglobin",
+        "hemoglobin": "hemoglobin", "wbc": "wbc", "wbc count": "wbc",
+        "white blood cell count": "wbc", "white blood cells": "wbc",
+        "rbc": "rbc", "rbc count": "rbc", "red blood cell count": "rbc",
+        "platelet count": "platelet count", "platelets": "platelet count",
+        "hba1c": "hba1c", "hb a1c": "hba1c", "glycated hemoglobin": "hba1c",
+        "fasting blood sugar": "glucose", "fasting glucose": "glucose",
+        "blood glucose": "glucose", "glucose": "glucose",
+        "creatinine": "creatinine", "serum creatinine": "creatinine",
+        "urea": "urea", "serum urea": "urea", "sodium": "sodium",
+        "potassium": "potassium", "total cholesterol": "total cholesterol",
+        "cholesterol total": "total cholesterol", "hdl cholesterol": "hdl cholesterol",
+        "hdl": "hdl cholesterol", "ldl cholesterol": "ldl cholesterol",
+        "ldl": "ldl cholesterol", "triglycerides": "triglycerides",
+        "tsh": "tsh", "alt": "alt", "sgpt": "alt", "ast": "ast", "sgot": "ast",
+        "bilirubin": "bilirubin", "vitamin d": "vitamin d", "vitamin b12": "vitamin b12",
+        "crp": "crp",
+    }
+    return aliases.get(raw, raw)
+
+
 def _find_lab_entities(pages: list[dict[str, Any]]) -> list[ExtractedEntity]:
     entities: list[ExtractedEntity] = []
     for page in pages:
@@ -209,6 +236,7 @@ def _find_lab_entities(pages: list[dict[str, Any]]) -> list[ExtractedEntity]:
                 0.60 if low_ocr else 0.88, low_ocr or raw_unit is None,
                 _source(page["page"], line, _bbox_for_match(page, line), page["method"]),
                 "OCR confidence is low." if low_ocr else ("Unit not detected; human confirmation required." if raw_unit is None else None),
+                normalize_test_name(test_name),
             ))
     return entities
 
