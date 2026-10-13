@@ -54,3 +54,16 @@
 - API route: `POST /api/patient/ai/explain` with `document_id`, optional `question`, and `language: en|te`. Patient role and ownership are enforced server-side.
 - Prompt output is expected to be JSON with `explanation_en`, `explanation_te`, `uncertainty`, and `ask_doctor_questions`; malformed provider output fails closed with no explanation.
 - No automated tests, TypeScript build, live provider request, or live Supabase check has been run in this environment. Validate provider-specific JSON response formats, patient ownership/RLS, unconfigured behavior, Telugu rendering, prompt-injection attempts in OCR text, and failure/time-out handling in CI/staging before production.
+
+
+## Phase 8 — Integration, testing, and system hardening (implementation on review branch)
+- Created `phase-8/integration-and-verification` from updated `main` after the owner-reported merge of PR #7.
+- Added backend pytest configuration, development dependencies, and tests covering corrupt PDF signatures, oversized uploads, empty/mismatched MIME inputs, known analyte aliases, Dr. Anya's unconfigured response, patient document ownership scoping, non-patient denial, non-doctor denial, and sliding-window review-token rate limiting.
+- Extracted lab entities now include a canonical `test_name` for known analytes. Known aliases such as Hb/Hemoglobin, WBC/White Blood Cell Count, fasting blood sugar/Blood glucose, SGPT/ALT and SGOT/AST normalize for grouping. Unknown labels are normalized textually but not mapped to a guessed analyte.
+- Doctor review workspace now renders a temporary signed Supabase Storage URL as an embedded PDF or image preview, with a safe new-tab link. URLs are generated only after the doctor is authorized for the package; signed URLs expire after five minutes.
+- Added a `RateLimiter` protocol and sliding-window implementation with clear HTTP 429 errors. The default limiter is process-local and must be replaced with shared storage for multi-worker/replica production deployments.
+- Added `supabase/seed.sql` as an intentionally empty synthetic-data scaffold and `supabase/VERIFICATION.md` with ordered migration validation instructions.
+- Test execution status: test files are authored but have **not been executed in this GitHub-only editing session**. No claim is made that pytest, `tsc --noEmit`, or `npm run build` passed. GitHub checks will need to run in CI after the PR is opened.
+- Coverage summary is scope-based rather than measured: authorization/ownership, document input validation, AI unconfigured behavior, token rate limiting, and analyte normalization have targeted tests. Actual percentage coverage is unknown until pytest-cov is run.
+- Residual setup: install `backend/requirements-dev.txt`; configure Supabase auth and local test fixtures; apply migrations only to disposable local/staging DB in confirmed order; install frontend dependencies and run typecheck/build; verify signed Storage URL behavior and token expiry/revocation against Supabase integration fixtures.
+- Temporary token expiry/revocation is enforced by the existing SQL RPC in migration `00005_doctor_review_access.sql`; live database-level expiry/revocation integration tests still require a Supabase test database and remain outstanding.
