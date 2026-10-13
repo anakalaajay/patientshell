@@ -1,5 +1,4 @@
 import os
-from typing import Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,14 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.me import router as me_router
 
 
-class HealthResponse:
-    status: Literal["ok"] = "ok"
-    service: str = "patientshell-api"
-
-
 app = FastAPI(
     title="Patientshell API",
-    version="0.2.0",
+    version="0.3.0",
     description="API foundation for the Patientshell patient-centered healthcare platform.",
 )
 
