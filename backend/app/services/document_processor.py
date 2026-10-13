@@ -208,7 +208,15 @@ def normalize_test_name(label: str | None) -> str:
         "bilirubin": "bilirubin", "vitamin d": "vitamin d", "vitamin b12": "vitamin b12",
         "crp": "crp",
     }
-    return aliases.get(raw, raw)
+    # Remove common parenthetical/specimen qualifiers only for recognized analytes.
+    known_label_aliases = {
+        "hemoglobin hb": "hemoglobin",
+        "creatinine serum": "creatinine",
+        "vitamin d 25 oh": "vitamin d",
+        "vitamin d 25 hydroxy": "vitamin d",
+        "wbc count": "wbc",
+    }
+    return aliases.get(raw, known_label_aliases.get(raw, raw))
 
 
 def _find_lab_entities(pages: list[dict[str, Any]]) -> list[ExtractedEntity]:
