@@ -34,3 +34,22 @@ drop trigger if exists on_auth_user_created_patientshell on auth.users;
 create trigger on_auth_user_created_patientshell
 after insert on auth.users
 for each row execute function private.handle_new_auth_user();
+
+-- Backfill existing Auth accounts that predate this trigger. Existing application
+-- roles are preserved; only missing profiles are provisioned as patients.
+insert into public.user_profiles (id, role, full_name, email)
+select
+  u.id,
+  'patient',
+  nullif(trim(coalesce(u.raw_user_meta_data ->> 'full_name', '')), ''),
+  u.email
+from auth.users u
+left join public.user_profiles p on p.id = u.id
+where p.id is null;
+
+insert into public.patient_profiles (user_id)
+select p.id
+from public.user_profiles p
+where p.role = 'patient'
+on conflict (user_id) do nothing;
+
