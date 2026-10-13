@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import DrAnyaChat from '../components/DrAnyaChat'
 import { getPatientQuestions, getPatientTimeline, type PatientQuestion, type TimelinePayload } from '../services/patient'
 
 function formatDate(value: string | null | undefined) {
@@ -27,6 +28,7 @@ export default function PatientDashboard() {
   const [questions, setQuestions] = useState<PatientQuestion[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [selectedExplainDoc, setSelectedExplainDoc] = useState<{ id: string; file_name: string } | null>(null)
 
   useEffect(() => {
     if (!session) return
@@ -76,7 +78,7 @@ export default function PatientDashboard() {
             <article className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Recent reports</h2><p className="mt-1 text-sm text-slate-500">Latest document metadata</p></div><Link to="/patient/timeline" className="text-sm font-semibold text-teal-700 hover:text-teal-900">View all</Link></div>
               <div className="mt-5 divide-y divide-slate-100">
-                {recentReports.length ? recentReports.map((report) => <div key={report.id} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-lg">▤</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{report.file_name}</p><p className="mt-1 text-xs text-slate-500">{report.document_type || 'Medical document'} · {formatDate(report.created_at)}</p></div><StatusPill status={report.processing_status} /></div>) : <p className="py-8 text-sm text-slate-500">No reports are recorded yet.</p>}
+                {recentReports.length ? recentReports.map((report) => <div key={report.id} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-lg">▤</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{report.file_name}</p><p className="mt-1 text-xs text-slate-500">{report.document_type || 'Medical document'} · {formatDate(report.created_at)}</p><button onClick={() => setSelectedExplainDoc({ id: report.id, file_name: report.file_name })} className="mt-2 text-xs font-semibold text-indigo-700 hover:text-indigo-900">Explain with Dr. Anya</button></div><StatusPill status={report.processing_status} /></div>) : <p className="py-8 text-sm text-slate-500">No reports are recorded yet.</p>}
               </div>
             </article>
             <article className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -89,6 +91,7 @@ export default function PatientDashboard() {
           <section className="rounded-2xl border border-teal-100 bg-teal-50/70 p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-bold text-teal-950">Have a question about your care?</h2><p className="mt-1 text-sm text-teal-900/80">Send a non-urgent question to be tracked in your portal.</p></div><Link to="/patient/questions" className="inline-flex w-fit rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Ask a question</Link></div></section>
         </>
       )}
+      {selectedExplainDoc && <DrAnyaChat documentId={selectedExplainDoc.id} documentName={selectedExplainDoc.file_name} onClose={() => setSelectedExplainDoc(null)} />}
     </div>
   )
 }

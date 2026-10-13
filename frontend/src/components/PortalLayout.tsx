@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import DrAnyaChat from './DrAnyaChat'
 
 const navigation = [
   { to: '/patient', label: 'Overview', end: true, icon: '⌂' },
@@ -59,6 +60,7 @@ export default function PortalLayout() {
         </aside>
         <main className="min-w-0"><Outlet /></main>
       </div>
+      <DrAnyaChat />
     </div>
   )
 }

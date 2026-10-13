@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import DrAnyaChat from '../components/DrAnyaChat'
 import { getPatientTimeline, type TimelineEntry, type TimelinePayload } from '../services/patient'
 
 function dateLabel(value: string | null | undefined) {
@@ -14,6 +15,7 @@ export default function PatientTimelinePage() {
   const [data, setData] = useState<TimelinePayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedExplainDoc, setSelectedExplainDoc] = useState<{ id: string; file_name: string } | null>(null)
 
   useEffect(() => {
     if (!session) return
@@ -37,6 +39,7 @@ export default function PatientTimelinePage() {
                 <div className="min-w-0 flex-1 rounded-xl border border-slate-100 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">{entry.type === 'visit' ? 'Medical visit' : 'Medical document'}</p><h2 className="mt-1 font-semibold">{entry.type === 'visit' ? (entry.visit_type || 'Clinical visit') : entry.file_name}</h2></div><time className="text-xs text-slate-500">{dateLabel(entry.occurred_at)}</time></div>
                   {entry.type === 'visit' ? <><p className="mt-2 text-sm text-slate-600">{entry.facility_name || 'Facility not recorded'}{entry.status ? ` · ${entry.status.replaceAll('_', ' ')}` : ''}</p>{entry.summary && <p className="mt-2 text-sm leading-6 text-slate-600">{entry.summary}</p>}</> : <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500"><span>{entry.document_type || 'Report'}</span><span>·</span><span>{({ pending: 'Pending', processing: 'Processing', processed: 'Completed', review_required: 'Review needed', failed: 'Failed' } as Record<string, string>)[entry.processing_status || 'pending'] || (entry.processing_status || 'pending').replaceAll('_', ' ')}</span></div>}
+                  {entry.type === 'document' && <button onClick={() => setSelectedExplainDoc({ id: entry.id, file_name: entry.file_name || 'Medical document' })} className="mt-3 text-sm font-semibold text-indigo-700 hover:text-indigo-900">Explain with Dr. Anya</button>}
                 </div>
               </article>)}
             </div> : <div className="py-12 text-center"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-2xl">◷</span><h2 className="mt-4 font-semibold">Your timeline starts here</h2><p className="mt-2 text-sm text-slate-500">No visits or documents are recorded yet.</p></div>}
@@ -47,6 +50,7 @@ export default function PatientTimelinePage() {
           </aside>
         </div>
       )}
+      {selectedExplainDoc && <DrAnyaChat documentId={selectedExplainDoc.id} documentName={selectedExplainDoc.file_name} onClose={() => setSelectedExplainDoc(null)} />}
     </div>
   )
 }

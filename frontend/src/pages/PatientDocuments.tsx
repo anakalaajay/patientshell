@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import DrAnyaChat from '../components/DrAnyaChat'
 
 type MedicalDocument = {
   id: string
@@ -51,6 +52,7 @@ export default function PatientDocumentsPage() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [selectedExplainDoc, setSelectedExplainDoc] = useState<MedicalDocument | null>(null)
 
   const loadDocuments = useCallback(async () => {
     if (!session) return
@@ -183,7 +185,7 @@ export default function PatientDocumentsPage() {
               <div className="flex min-w-0 gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm font-bold text-slate-600">{doc.mime_type === 'application/pdf' ? 'PDF' : 'IMG'}</span><div className="min-w-0"><h3 className="break-words font-semibold">{doc.file_name}</h3><p className="mt-1 text-xs text-slate-500">{doc.document_date || new Date(doc.created_at).toLocaleDateString()} · {(doc.file_size_bytes / 1024).toFixed(0)} KB</p></div></div>
               <span className={\`rounded-full px-3 py-1 text-xs font-semibold \${statusClass[doc.processing_status] || statusClass.pending}\`}>{statusLabel[doc.processing_status] || doc.processing_status.replaceAll('_', ' ')}</span>
             </div>
-            <button onClick={() => void toggleExtracted(doc)} className="mt-4 text-sm font-semibold text-teal-700 hover:text-teal-900">{expanded === doc.id ? 'Hide extracted data' : 'Review extracted data'}</button>
+            <div className="mt-4 flex flex-wrap gap-4"><button onClick={() => void toggleExtracted(doc)} className="text-sm font-semibold text-teal-700 hover:text-teal-900">{expanded === doc.id ? 'Hide extracted data' : 'Review extracted data'}</button><button onClick={() => setSelectedExplainDoc(doc)} className="text-sm font-semibold text-indigo-700 hover:text-indigo-900">Explain with Dr. Anya</button></div>
             {expanded === doc.id && <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4">
               {!items[doc.id] ? <p className="text-sm text-slate-500">Loading extracted items…</p> : items[doc.id].length === 0 ? <p className="text-sm text-slate-500">No clinical entities were extracted. Nothing has been guessed or auto-filled.</p> : items[doc.id].map((item) => {
                 const entity = item.extracted_data || {}
@@ -200,6 +202,7 @@ export default function PatientDocumentsPage() {
           </article>)}
         </div>}
       </section>
+      {selectedExplainDoc && <DrAnyaChat documentId={selectedExplainDoc.id} documentName={selectedExplainDoc.file_name} onClose={() => setSelectedExplainDoc(null)} />}
       <p className="text-xs leading-5 text-slate-500">Extracted values are informational only, not a diagnosis. Always verify medical results against the original document and consult a qualified clinician.</p>
     </div>
   )
