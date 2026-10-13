@@ -18,7 +18,7 @@ function StatusPill({ status }: { status: string }) {
     processed: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     shared: 'bg-teal-50 text-teal-700 ring-teal-100',
   }
-  return <span className={\`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset \${styles[status] || 'bg-slate-100 text-slate-600 ring-slate-200'}\`}>{status.replaceAll('_', ' ')}</span>
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${styles[status] || 'bg-slate-100 text-slate-600 ring-slate-200'}`}>{status.replaceAll('_', ' ')}</span>
 }
 
 export default function PatientDashboard() {
