@@ -33,18 +33,6 @@ class ExtractedDataCorrection(BaseModel):
     note: str | None = Field(default=None, max_length=2000)
 
 
-def _audit(client: Client, patient_id: str, event_type: str, resource_id: str, metadata: dict[str, Any]) -> None:
-    # Audit is best-effort only after the main transaction-like operations succeed.
-    client.table("system_audit_events").insert({
-        "actor_id": patient_id,
-        "patient_id": patient_id,
-        "event_type": event_type,
-        "resource_type": "extracted_document_data",
-        "resource_id": resource_id,
-        "metadata": metadata,
-    }).execute()
-
-
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
@@ -124,11 +112,6 @@ async def upload_document(
         }).eq("id", document_id).eq("patient_id", patient_id).select(
             "id, patient_id, file_name, mime_type, file_size_bytes, document_type, processing_status, document_date, created_at"
         ).single().execute()
-        _audit(client, patient_id, "medical_document.uploaded_and_processed", document_id, {
-            "entity_count": len(entities),
-            "needs_human_review": extraction["needs_human_review"],
-            "extraction_engine": extraction["extraction_engine"],
-        })
         return {"document": updated.data, "extraction": {
             "entity_count": len(entities),
             "needs_human_review": extraction["needs_human_review"],
@@ -218,8 +201,4 @@ def review_extracted_data(
     }).eq("id", data_id).eq("document_id", document_id).eq(
         "patient_id", patient_id
     ).select("id, document_id, extracted_data, extraction_model, confidence, review_status, reviewed_at, updated_at").single().execute()
-    _audit(client, patient_id, f"extracted_data.{update.action}", data_id, {
-        "document_id": document_id, "note": update.note,
-        "previous_entity": old_entity, "new_entity": new_entity,
-    })
     return {"item": result.data}
