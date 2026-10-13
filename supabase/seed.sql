@@ -1,0 +1,5 @@
+-- Patientshell synthetic seed-data scaffold.
+-- Deliberately contains no patient records by default.
+-- If local fixtures are added, use reserved synthetic identifiers and fake values only.
+-- Never load real patient data into development, CI, or staging seeds.
+-- Execute only against a local/development Supabase instance, never production.
