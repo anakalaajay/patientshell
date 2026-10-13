@@ -530,3 +530,92 @@ create policy system_audit_events_select_patient_or_actor
 
 -- No INSERT / UPDATE / DELETE policies for audit events or temporary tokens:
 -- trusted server-side code is responsible for these sensitive operations.
+
+
+-- Supabase anonymous Auth users use the PostgreSQL role "authenticated".
+-- Add a restrictive policy to every table so an anonymous Auth session cannot
+-- pass merely because its database role is authenticated.
+create schema if not exists private;
+
+create or replace function private.is_non_anonymous_authenticated()
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select auth.uid() is not null
+     and coalesce((select auth.jwt())->>'is_anonymous', 'false') <> 'true'
+$$;
+
+revoke all on function private.is_non_anonymous_authenticated() from public, anon;
+grant usage on schema private to authenticated;
+grant execute on function private.is_non_anonymous_authenticated() to authenticated;
+
+create policy user_profiles_block_anonymous_auth
+  on public.user_profiles as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy patient_profiles_block_anonymous_auth
+  on public.patient_profiles as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy doctor_profiles_block_anonymous_auth
+  on public.doctor_profiles as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy medical_visits_block_anonymous_auth
+  on public.medical_visits as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy medical_documents_block_anonymous_auth
+  on public.medical_documents as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy extracted_document_data_block_anonymous_auth
+  on public.extracted_document_data as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy lab_records_block_anonymous_auth
+  on public.lab_records as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy medication_records_block_anonymous_auth
+  on public.medication_records as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy review_packages_block_anonymous_auth
+  on public.review_packages as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy review_package_doctors_block_anonymous_auth
+  on public.review_package_doctors as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy review_package_documents_block_anonymous_auth
+  on public.review_package_documents as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy review_package_visits_block_anonymous_auth
+  on public.review_package_visits as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy temporary_access_tokens_block_anonymous_auth
+  on public.temporary_access_tokens as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy patient_questions_block_anonymous_auth
+  on public.patient_questions as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy doctor_reviews_block_anonymous_auth
+  on public.doctor_reviews as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy doctor_review_resolutions_block_anonymous_auth
+  on public.doctor_review_resolutions as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
+create policy system_audit_events_block_anonymous_auth
+  on public.system_audit_events as restrictive for all to authenticated
+  using (private.is_non_anonymous_authenticated())
+  with check (private.is_non_anonymous_authenticated());
