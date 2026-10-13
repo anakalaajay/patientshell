@@ -7,12 +7,13 @@ from app.api.routes.me import router as me_router
 from app.api.routes.patient import router as patient_router
 from app.api.routes.documents import router as documents_router
 from app.api.routes.doctor import router as doctor_router
+from app.api.routes.ai import router as ai_router
 
 
 app = FastAPI(
     title="Patientshell API",
-    version="0.4.0",
-    description="Patient portal and medical-document intelligence API.",
+    version="0.5.0",
+    description="Patient portal, document intelligence, and Dr. Anya AI companion API.",
 )
 
 allowed_origins = [
@@ -39,3 +40,4 @@ app.include_router(me_router, prefix="/api")
 app.include_router(patient_router, prefix="/api")
 app.include_router(documents_router, prefix="/api")
 app.include_router(doctor_router, prefix="/api")
+app.include_router(ai_router, prefix="/api")
