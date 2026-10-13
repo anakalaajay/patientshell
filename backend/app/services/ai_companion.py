@@ -43,6 +43,7 @@ with keys explanation_en, explanation_te, uncertainty, and ask_doctor_questions
 (an array of short questions). No markdown fences. Avoid repeating personal
 identifiers. Include no diagnosis or treatment plan."""
 
+
 def _safe_facts(entities: list[dict[str, Any]]) -> list[dict[str, Any]]:
     facts: list[dict[str, Any]] = []
     for row in entities:
@@ -63,16 +64,20 @@ def _safe_facts(entities: list[dict[str, Any]]) -> list[dict[str, Any]]:
         })
     return facts
 
+
 def _provider_completion(provider: str, api_key: str, model: str, prompt: str) -> str:
-    """Small provider adapter; local endpoints use an OpenAI-compatible API."""
+    """Small provider adapter; local and OpenRouter endpoints use OpenAI-compatible APIs."""
     if provider in {"openai", "local", "openrouter"}:
         if provider in {"local", "openrouter"}:
             default_base = "https://openrouter.ai/api/v1" if provider == "openrouter" else ""
-            base = os.getenv("AI_BASE_URL", default_base).rstrip("/")
+            configured_base = os.getenv("AI_BASE_URL", "").strip()
+            base = (configured_base or default_base).rstrip("/")
         else:
             base = "https://api.openai.com/v1"
         if not base:
-            raise RuntimeError("Local AI provider requires AI_BASE_URL.")
+            if provider == "local":
+                raise RuntimeError("Local AI provider requires AI_BASE_URL.")
+            raise RuntimeError("AI provider base URL is not configured.")
         body = json.dumps({
             "model": model,
             "temperature": 0.1,
@@ -125,6 +130,7 @@ def _provider_completion(provider: str, api_key: str, model: str, prompt: str) -
     if not isinstance(text, str) or not text.strip():
         raise RuntimeError("AI provider returned no content.")
     return text
+
 
 def explain_document(
     document: dict[str, Any],
