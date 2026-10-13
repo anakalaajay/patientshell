@@ -29,7 +29,7 @@ def test_openrouter_uses_compatible_endpoint_and_configured_free_router(monkeypa
         captured["headers"] = dict(request.header_items())
         captured["body"] = json.loads(request.data.decode("utf-8"))
         captured["timeout"] = timeout
-        return FakeResponse({"choices": [{"message": {"content": "{\\"ok\\": true}"}}]})
+        return FakeResponse({"choices": [{"message": {"content": json.dumps({"ok": True})}}]})
 
     monkeypatch.setattr(ai_companion, "urlopen", fake_urlopen)
     result = ai_companion._provider_completion(
