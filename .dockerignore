@@ -7,6 +7,5 @@
 frontend/dist
 .env
 .env.*
-!.env.production.example
 !backend/.env.example
 !frontend/.env.example
