@@ -67,3 +67,18 @@
 - Coverage summary is scope-based rather than measured: authorization/ownership, document input validation, AI unconfigured behavior, token rate limiting, and analyte normalization have targeted tests. Actual percentage coverage is unknown until pytest-cov is run.
 - Residual setup: install `backend/requirements-dev.txt`; configure Supabase auth and local test fixtures; apply migrations only to disposable local/staging DB in confirmed order; install frontend dependencies and run typecheck/build; verify signed Storage URL behavior and token expiry/revocation against Supabase integration fixtures.
 - Temporary token expiry/revocation is enforced by the existing SQL RPC in migration `00005_doctor_review_access.sql`; live database-level expiry/revocation integration tests still require a Supabase test database and remain outstanding.
+
+
+## Phase 9 — Production packaging and unified deployment (implementation on review branch)
+- Created phase-9/production-deployment from owner-updated main after the reported merge of PR #8.
+- FastAPI mounts frontend/dist/assets at /assets when available, serves index.html for client-side browser routes, and retains /api/*, /health and /api/health. Without the build it returns a clear API-only 404 for SPA routes.
+- Added a multi-stage root Dockerfile: Node 20 frontend builder; Python 3.11 slim runtime with Tesseract, Poppler and OpenCV libraries; copied static assets; unprivileged runtime user; health check.
+- Added docker-compose.yml, .dockerignore and .env.production.example. Public Vite configuration is supplied at build time; backend and AI configuration remains runtime environment.
+- Added DEPLOYMENT.md with ordered Supabase migrations 00001–00005, Docker commands, hosting guidance, health checks, RLS/OCR/AI troubleshooting and release checklist.
+- Replaced the empty root README with architecture, feature overview, repository map, local development, Docker commands and security notes.
+- Verification is pending on PR #9 CI. Liveness does not prove live Supabase, RLS, OCR or AI readiness. Staging verification and migration approval remain required.
+
+## Phase 10 — Final project closure (definition of done)
+- Packaging and documentation are prepared in Phase 9; project closure is pending until PR #9 is reviewed and merged by the repository owner.
+- Closure requires successful backend tests, frontend TypeScript/Vite build, container build/run and health check, staging verification of Supabase Auth/RLS/private Storage/doctor grants/OCR/AI, and owner sign-off.
+- No production Supabase migration was executed by this branch, no production deployment was triggered, and no regulatory/security certification is claimed.
