@@ -8,6 +8,10 @@ import PatientDocumentsPage from './pages/PatientDocuments'
 import PatientProfilePage from './pages/PatientProfile'
 import PatientQuestionsPage from './pages/PatientQuestions'
 import PatientTimelinePage from './pages/PatientTimeline'
+import DoctorProtectedRoute from './auth/DoctorProtectedRoute'
+import DoctorLayout from './components/DoctorLayout'
+import DoctorDashboard from './pages/DoctorDashboard'
+import DoctorReviewView from './pages/DoctorReviewView'
 
 function HomeRedirect() {
   const { session, profile, loading, profileLoading } = useAuth()
@@ -16,6 +20,7 @@ function HomeRedirect() {
   }
   if (!session) return <Navigate to="/auth" replace />
   if (profile?.role === 'patient') return <Navigate to="/patient" replace />
+  if (profile?.role === 'doctor') return <Navigate to="/doctor" replace />
   if (profile) return <Navigate to="/not-authorized" replace />
   return <Navigate to="/auth" replace />
 }
@@ -47,6 +52,12 @@ function AppRoutes() {
           <Route path="timeline" element={<PatientTimelinePage />} />
           <Route path="documents" element={<PatientDocumentsPage />} />
           <Route path="questions" element={<PatientQuestionsPage />} />
+        </Route>
+      </Route>
+      <Route element={<DoctorProtectedRoute />}>
+        <Route path="/doctor" element={<DoctorLayout />}>
+          <Route index element={<DoctorDashboard />} />
+          <Route path="reviews/:packageId" element={<DoctorReviewView />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
