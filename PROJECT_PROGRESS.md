@@ -31,7 +31,7 @@
 - Comparison groups by exact test label and only treats values as directly comparable when units are present and match and reference-range context is consistent. No unit conversion or automated diagnosis is performed; mismatched/missing units and context are flagged for clinician review.
 
 ## Verification and deployment notes
-- Phase 6 code is on \`phase-6/doctor-portal\`; do not merge until the project owner approves the pull request.
+- Phase 6 was merged by the project owner in PR #6. Phase 7 remains isolated on `phase-7/dr-anya-ai` pending review.
 - No Supabase migration has been applied to the live project from this implementation.
 - Automated backend tests and frontend build have not been run in this environment. Validate with CI before production use.
 - Test non-doctor denial, unverified doctor denial, revoked/expired grants, invalid/expired/revoked temporary tokens, rate limiting, package membership boundaries, audit triggers, question response access, and comparison handling for missing/different units.
