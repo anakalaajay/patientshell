@@ -31,14 +31,18 @@ Backend runtime:
 - SUPABASE_URL — project URL.
 - SUPABASE_ANON_KEY — anon/publishable key. Do not use a service-role key to bypass RLS.
 - AI_PROVIDER_API_KEY and AI_MODEL_NAME — required only to enable the Dr. Anya provider.
-- AI_PROVIDER — openai, anthropic, or local; defaults to openai.
-- AI_BASE_URL — custom provider-compatible endpoint; required for a local OpenAI-compatible endpoint.
+- AI_PROVIDER — openai, anthropic, local, or openrouter. For the OpenRouter adapter use openrouter.
+- AI_MODEL_NAME — for the free adaptive model pool, use openrouter/free. OpenRouter selects among currently available free models and filters for requested JSON output support; availability and quotas can change.
+- AI_BASE_URL — optional compatible endpoint override; leave blank for OpenRouter's default https://openrouter.ai/api/v1, or set it for a local OpenAI-compatible endpoint.
+- OPENROUTER_SITE_URL and OPENROUTER_APP_NAME — optional OpenRouter attribution headers.
 - CORS_ORIGINS — comma-separated browser origins; same-origin production normally does not need additional CORS origins.
 
 Frontend build-time public values:
 - VITE_SUPABASE_URL
 - VITE_SUPABASE_PUBLISHABLE_KEY
 - VITE_API_BASE_URL — leave blank for same-origin; set an HTTPS API base only if frontend and backend are hosted separately.
+
+For OpenRouter, the free-model router is a changing pool, not a stable model guarantee. OpenRouter currently advertises free-tier limits (including a daily request limit); check its current pricing/terms before depending on it. Free endpoints may have different data handling and availability, and model providers may retain prompts or use them for training. Do not send identifiable patient data, medical reports or PHI to a free third-party model unless your privacy/security review and provider terms explicitly permit it. For real production patient records, use a provider and plan with suitable contractual privacy protections, or keep the AI feature unconfigured.
 
 Never place AI keys, database passwords, or Supabase service-role keys in VITE_* variables. Frontend values are compiled into public static assets, so rebuild after changing them.
 
@@ -99,7 +103,7 @@ Without frontend/dist, FastAPI stays API-only and gives a clear 404 for browser 
 - RLS/403/404: do not disable RLS. Confirm migrations 00001–00005, profile provisioning, ownership checks, doctor verification and active package grants.
 - OCR failure: verify tesseract-ocr, poppler-utils, libgl1 and libglib2.0-0 exist in the runtime. Digital PDFs may extract text directly; scanned PDFs require Poppler/Tesseract. Avoid logging medical document contents.
 - Source preview unavailable: verify package grant, authorized document path, private bucket, and that the short-lived signed URL has not expired.
-- Dr. Anya unconfigured: set AI_PROVIDER_API_KEY and AI_MODEL_NAME as runtime secrets. For local provider, set AI_BASE_URL and verify network access.
+- Dr. Anya unconfigured: set AI_PROVIDER_API_KEY and AI_MODEL_NAME as runtime secrets. For OpenRouter set AI_PROVIDER=openrouter and AI_MODEL_NAME=openrouter/free; for local provider set AI_BASE_URL. Verify network access and the provider's current quota.
 - Container exits: inspect docker compose logs patientshell, verify .env exists, and ensure the host port is free.
 - SPA route 404: verify frontend/dist/index.html exists in the image and the Vite build succeeded.
 - Migration mismatch: stop and reconcile supabase migration list with supabase/VERIFICATION.md. Never blindly replay SQL against production.
