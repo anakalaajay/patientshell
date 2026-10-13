@@ -183,8 +183,8 @@ def explain_document(
             "uncertainty": str(generated.get("uncertainty") or "Some extracted information may be incomplete; verify it against the original report."),
             "ask_doctor_questions": [str(item)[:240] for item in questions[:5]],
         }
-    except (RuntimeError, ValueError, TypeError):
-        # Never synthesize a fake medical answer when provider output is unavailable.
+    except Exception:
+        # Provider errors and malformed model output fail closed; never synthesize a fake medical answer.
         return {
             **common,
             "configured": True,
