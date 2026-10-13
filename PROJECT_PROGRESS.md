@@ -16,23 +16,28 @@
 - Added root `.gitignore` rules for local secrets, dependencies, and build output.
 - The Phase 2 foundation was reviewed and merged into `main`.
 
-## Phase 3 — Database schema, migrations, and Auth (scaffolded)
+## Phase 3 — Database schema, migrations, and Auth (complete; merged)
 
-- Added `supabase/migrations/00001_initial_schema.sql` with identity, patient/doctor profiles, visits, documents, extracted data, labs, medications, review packages, explicit doctor grants, temporary token hashes, questions, reviews/resolutions, and audit events.
-- Added `supabase/migrations/00002_rls_policies.sql` with row-level security, explicit grants, patient ownership policies, package-scoped doctor access, and an explicit block for anonymous Auth sessions.
-- Added composite foreign keys where patient/package/document relationships need to stay within the same patient's records.
-- Added Supabase Python client integration and server-side bearer-token verification in `backend/app/core/auth.py`.
-- Added protected `GET /api/me`, returning the authenticated user's database profile and role.
-- Kept temporary access token hashes and audit-event writes restricted to trusted server-side workflows.
-- Added the Supabase Python dependency to `backend/requirements.txt`.
+- PR #3 was reviewed and merged into `main`.
+- Added `supabase/migrations/00001_initial_schema.sql` for identity, patient/doctor profiles, visits, documents, extracted data, labs, medications, review packages, explicit doctor grants, temporary token hashes, questions, reviews/resolutions, and audit events.
+- Added `supabase/migrations/00002_rls_policies.sql` with row-level security, patient ownership, package-scoped doctor access, and anonymous-session restrictions.
+- Added `backend/app/core/auth.py` and protected `GET /api/me`.
+- Migrations have not been confirmed as applied to the live Supabase project; apply and validate them in a development environment before production use.
 
-## Current status and required verification
+## Phase 4 — Patient portal and branch reconciliation (implementation in review)
 
-Phase 3 files are committed to a review branch. The SQL migrations have **not** been applied to the live Supabase project, and the API has not been tested against live credentials or a migrated database.
+- Confirmed PR #3 is merged; created `phase-4/patient-portal` from the latest `main`, so Phase 3 changes are included without rebasing the old branch.
+- Added the frontend Supabase client with persisted browser sessions, sign-up/sign-in, and auth state context.
+- Added patient-only route guards based on the verified database profile role.
+- Added patient dashboard, demographic profile view/update, chronological visit/document timeline, review package summary, and patient question submission/status/resolution views.
+- Added protected backend endpoints: `GET /api/patient/profile`, `PATCH /api/patient/profile`, `GET /api/patient/timeline`, `GET /api/patient/questions`, and `POST /api/patient/questions`.
+- Patient endpoints use a verified bearer JWT, require the database role `patient`, scope queries to the authenticated user, and continue to rely on RLS.
+- Added `supabase/migrations/00003_auth_profile_provisioning.sql` to create a patient-role application profile on Auth signup; the role is set server-side and is never taken from user metadata.
 
-Before production use:
-1. Review and run migrations in a non-production Supabase environment.
-2. Add pgTAP tests for owner, non-owner, granted doctor, revoked/expired doctor, and anonymous-session cases.
-3. Provision user profiles and doctor verification through a trusted server-side workflow; users must not self-assign doctor/admin roles.
-4. Configure environment variables locally without committing real secrets.
-5. Run backend tests and verify `GET /api/health` and authenticated `GET /api/me`.
+## Verification and remaining work
+
+- Phase 4 code is committed to its review branch. It has not been merged.
+- No live Supabase schema changes were applied as part of Phase 4.
+- Configure `frontend/.env.local` with the Supabase project URL and publishable key, and configure the backend environment from `backend/.env.example`.
+- Run `npm install` and `npm run build` in `frontend/`; install backend requirements and test all protected endpoints against a development Supabase project.
+- Add automated tests for signup/profile provisioning, patient ownership, non-patient role denial, question submission, and RLS behavior before production deployment.

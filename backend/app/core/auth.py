@@ -91,3 +91,10 @@ def get_current_profile(
         "full_name": profile.get("full_name"),
         "email": profile.get("email") or user.email,
     }
+
+
+def create_authenticated_client(access_token: str) -> Client:
+    """Return a fresh Supabase client whose PostgREST calls use this user's JWT."""
+    client = _new_supabase_client()
+    client.postgrest.auth(access_token)
+    return client

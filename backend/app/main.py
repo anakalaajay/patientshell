@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.me import router as me_router
+from app.api.routes.patient import router as patient_router
 
 
 app = FastAPI(
@@ -33,3 +34,4 @@ def health_check() -> dict[str, str]:
 
 
 app.include_router(me_router, prefix="/api")
+app.include_router(patient_router, prefix="/api")
