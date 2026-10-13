@@ -3,9 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import threading
-import time
-from collections import defaultdict, deque
 from datetime import datetime, timezone
 from typing import Any
 
@@ -16,13 +13,9 @@ from supabase import Client
 
 from app.api.routes.patient import get_patient_context
 from app.core.auth import bearer_scheme, create_authenticated_client, get_current_profile
+from app.services.review_token_limiter import RateLimitExceeded, review_token_limiter
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
-_RATE_LIMIT = int(os.getenv("REVIEW_TOKEN_ATTEMPTS_PER_MINUTE", "8"))
-_ATTEMPTS: dict[str, deque[float]] = defaultdict(deque)
-_RATE_LOCK = threading.Lock()
-
-
 def get_doctor_context(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     profile: dict[str, Any] = Depends(get_current_profile),
@@ -46,17 +39,11 @@ def get_doctor_context(
 
 
 def _rate_limit_token(request: Request, doctor_id: str) -> None:
-    now = time.monotonic()
-    # Use a shared proxy-provided address only when the deployment trusts that proxy.
     remote = request.client.host if request.client else "unknown"
-    key = f"{doctor_id}:{remote}"
-    with _RATE_LOCK:
-        attempts = _ATTEMPTS[key]
-        while attempts and now - attempts[0] > 60:
-            attempts.popleft()
-        if len(attempts) >= _RATE_LIMIT:
-            raise HTTPException(status_code=429, detail="Too many review-token attempts. Try again in one minute.")
-        attempts.append(now)
+    try:
+        review_token_limiter.check(f"{doctor_id}:{remote}")
+    except RateLimitExceeded as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from None
 
 
 def _validate_temporary_token(
@@ -248,9 +235,8 @@ def get_review_workspace(
             source = entity.get("source") or {}
             if entity.get("entity_type") == "lab_result" and entity.get("value") is not None:
                 quote = str(source.get("quote") or "")
-                # The extraction schema does not guarantee a normalized analyte label.
-                # Keep the source line as the key instead of guessing a test name.
-                test_name = quote.strip() or "Unlabelled extracted lab result"
+                from app.services.document_processor import normalize_test_name
+                test_name = normalize_test_name(entity.get("test_name") or quote) or "unlabelled extracted lab result"
                 comparison_rows.append({
                     "test_name": test_name, "result_value": entity.get("value"),
                     "unit": entity.get("unit"), "reference_range": entity.get("reference_range"),

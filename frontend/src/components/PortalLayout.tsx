@@ -47,7 +47,7 @@ export default function PortalLayout() {
           <p className="mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Your care</p>
           <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col">
             {navigation.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.end} onClick={() => setMenuOpen(false)} className={({ isActive }) => \`flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition \${isActive ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-100' : 'text-slate-600 hover:bg-white hover:text-slate-900'}\`}>
+              <NavLink key={item.to} to={item.to} end={item.end} onClick={() => setMenuOpen(false)} className={({ isActive }) => `flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-100' : 'text-slate-600 hover:bg-white hover:text-slate-900'}`}>
                 <span className="grid h-6 w-6 place-items-center rounded-lg bg-white/80 text-base">{item.icon}</span>{item.label}
               </NavLink>
             ))}

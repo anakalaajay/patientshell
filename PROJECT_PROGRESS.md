@@ -31,15 +31,15 @@
 - Comparison groups by exact test label and only treats values as directly comparable when units are present and match and reference-range context is consistent. No unit conversion or automated diagnosis is performed; mismatched/missing units and context are flagged for clinician review.
 
 ## Verification and deployment notes
-- Phase 6 was merged by the project owner in PR #6. Phase 7 remains isolated on `phase-7/dr-anya-ai` pending review.
+- Phase 6 was merged by the project owner in PR #6. Phase 7 was subsequently merged by the project owner in PR #7.
 - No Supabase migration has been applied to the live project from this implementation.
 - Automated backend tests and frontend build have not been run in this environment. Validate with CI before production use.
 - Test non-doctor denial, unverified doctor denial, revoked/expired grants, invalid/expired/revoked temporary tokens, rate limiting, package membership boundaries, audit triggers, question response access, and comparison handling for missing/different units.
 - Configure backend \`SUPABASE_URL\` and \`SUPABASE_ANON_KEY\`, frontend \`VITE_API_BASE_URL\`, and install/verify OCR system dependencies as documented in Phase 5.
 
 
-## Phase 7 — Dr. Anya AI Companion (implementation on review branch)
-- Created `phase-7/dr-anya-ai` from the updated `main` after the project owner merged PR #6.
+## Phase 7 — Dr. Anya AI Companion (complete; merged in PR #7)
+- Created `phase-7/dr-anya-ai` from the updated `main` after PR #6 was merged; PR #7 was reviewed and merged by the project owner.
 - Added `backend/app/services/ai_companion.py`: provider adapter for OpenAI, Anthropic, and OpenAI-compatible local endpoints; credentials are read only from server-side `AI_PROVIDER_API_KEY`, with `AI_MODEL_NAME`, `AI_PROVIDER`, and optional `AI_BASE_URL` configuration. Keys are never accepted from request payloads or returned to clients.
 - Missing key/model configuration returns `configured: false` and the exact truthful support/configuration message. It does not simulate or fabricate an AI medical answer.
 - Added `POST /api/patient/ai/explain`. It uses the existing Supabase-verified patient JWT and database-backed patient role, checks the document against both document ID and `auth.uid()`-derived profile ID, then retrieves extracted rows constrained by the same patient and document IDs. Foreign document IDs return a generic 404.
@@ -54,3 +54,16 @@
 - API route: `POST /api/patient/ai/explain` with `document_id`, optional `question`, and `language: en|te`. Patient role and ownership are enforced server-side.
 - Prompt output is expected to be JSON with `explanation_en`, `explanation_te`, `uncertainty`, and `ask_doctor_questions`; malformed provider output fails closed with no explanation.
 - No automated tests, TypeScript build, live provider request, or live Supabase check has been run in this environment. Validate provider-specific JSON response formats, patient ownership/RLS, unconfigured behavior, Telugu rendering, prompt-injection attempts in OCR text, and failure/time-out handling in CI/staging before production.
+
+
+## Phase 8 — Integration, testing, and system hardening (implementation on review branch)
+- Created `phase-8/integration-and-verification` from updated `main` after the owner-reported merge of PR #7.
+- Added backend pytest configuration, development dependencies, and tests covering corrupt PDF signatures, oversized uploads, empty/mismatched MIME inputs, known analyte aliases, Dr. Anya's unconfigured response, patient document ownership scoping, non-patient denial, non-doctor denial, and sliding-window review-token rate limiting.
+- Extracted lab entities now include a canonical `test_name` for known analytes. Known aliases such as Hb/Hemoglobin, WBC/White Blood Cell Count, fasting blood sugar/Blood glucose, SGPT/ALT and SGOT/AST normalize for grouping. Unknown labels are normalized textually but not mapped to a guessed analyte.
+- Doctor review workspace now renders a temporary signed Supabase Storage URL as an embedded PDF or image preview, with a safe new-tab link. URLs are generated only after the doctor is authorized for the package; signed URLs expire after five minutes.
+- Added a `RateLimiter` protocol and sliding-window implementation with clear HTTP 429 errors. The default limiter is process-local and must be replaced with shared storage for multi-worker/replica production deployments.
+- Added `supabase/seed.sql` as an intentionally empty synthetic-data scaffold and `supabase/VERIFICATION.md` with ordered migration validation instructions.
+- Test execution status: test files are authored but have **not been executed in this GitHub-only editing session**. No claim is made that pytest, `tsc --noEmit`, or `npm run build` passed. GitHub checks will need to run in CI after the PR is opened.
+- Coverage summary is scope-based rather than measured: authorization/ownership, document input validation, AI unconfigured behavior, token rate limiting, and analyte normalization have targeted tests. Actual percentage coverage is unknown until pytest-cov is run.
+- Residual setup: install `backend/requirements-dev.txt`; configure Supabase auth and local test fixtures; apply migrations only to disposable local/staging DB in confirmed order; install frontend dependencies and run typecheck/build; verify signed Storage URL behavior and token expiry/revocation against Supabase integration fixtures.
+- Temporary token expiry/revocation is enforced by the existing SQL RPC in migration `00005_doctor_review_access.sql`; live database-level expiry/revocation integration tests still require a Supabase test database and remain outstanding.

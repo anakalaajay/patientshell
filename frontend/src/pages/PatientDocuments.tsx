@@ -56,8 +56,8 @@ export default function PatientDocumentsPage() {
 
   const loadDocuments = useCallback(async () => {
     if (!session) return
-    const response = await fetch(\`\${apiBase}/api/patient/documents\`, {
-      headers: { Authorization: \`Bearer \${session.access_token}\` },
+    const response = await fetch(`${apiBase}/api/patient/documents`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
     })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail || 'Could not load documents.')
     const data = await response.json()
@@ -88,8 +88,8 @@ export default function PatientDocumentsPage() {
     try {
       await new Promise<void>((resolve, reject) => {
         const request = new XMLHttpRequest()
-        request.open('POST', \`\${apiBase}/api/patient/documents/upload\`)
-        request.setRequestHeader('Authorization', \`Bearer \${session.access_token}\`)
+        request.open('POST', `${apiBase}/api/patient/documents/upload`)
+        request.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
         request.upload.onprogress = (event) => {
           if (event.lengthComputable) setProgress(Math.round((event.loaded / event.total) * 100))
         }
@@ -126,8 +126,8 @@ export default function PatientDocumentsPage() {
     setExpanded(doc.id); setError(null)
     if (items[doc.id] || !session) return
     try {
-      const response = await fetch(\`\${apiBase}/api/patient/documents/\${doc.id}/extracted-data\`, {
-        headers: { Authorization: \`Bearer \${session.access_token}\` },
+      const response = await fetch(`${apiBase}/api/patient/documents/${doc.id}/extracted-data`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
       })
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail || 'Could not load extracted data.')
       const payload = await response.json()
@@ -139,9 +139,9 @@ export default function PatientDocumentsPage() {
     if (!session) return
     setError(null)
     try {
-      const response = await fetch(\`\${apiBase}/api/patient/documents/\${docId}/extracted-data/\${item.id}\`, {
+      const response = await fetch(`${apiBase}/api/patient/documents/${docId}/extracted-data/${item.id}`, {
         method: 'PATCH',
-        headers: { Authorization: \`Bearer \${session.access_token}\`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, note: action === 'confirm' ? 'Confirmed by patient' : 'Rejected by patient' }),
       })
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail || 'Could not save review.')
@@ -167,14 +167,14 @@ export default function PatientDocumentsPage() {
         onDragOver={(event) => { event.preventDefault(); setDragging(true) }}
         onDragLeave={() => setDragging(false)}
         onDrop={(event) => { event.preventDefault(); setDragging(false); void uploadFile(event.dataTransfer.files[0]) }}
-        className={\`rounded-2xl border-2 border-dashed p-6 text-center transition sm:p-10 \${dragging ? 'border-teal-500 bg-teal-50' : 'border-slate-300 bg-white'}\`}
+        className={`rounded-2xl border-2 border-dashed p-6 text-center transition sm:p-10 ${dragging ? 'border-teal-500 bg-teal-50' : 'border-slate-300 bg-white'}`}
       >
         <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-teal-50 text-2xl text-teal-800">⇧</span>
         <h2 className="mt-4 text-lg font-bold">Drop a medical document here</h2>
         <p className="mt-2 text-sm text-slate-500">PDF, JPG, or PNG · maximum 15 MiB · stored privately</p>
         <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(event) => void uploadFile(event.target.files?.[0])} />
         <button type="button" disabled={uploading} onClick={() => inputRef.current?.click()} className="mt-5 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60">{uploading ? 'Uploading…' : 'Choose document'}</button>
-        {uploading && <div className="mx-auto mt-5 max-w-sm text-left"><div className="flex justify-between text-xs text-slate-500"><span>Upload progress</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: \`\${progress}%\` }} /></div><p className="mt-2 text-xs text-slate-500">Processing status will update after extraction finishes.</p></div>}
+        {uploading && <div className="mx-auto mt-5 max-w-sm text-left"><div className="flex justify-between text-xs text-slate-500"><span>Upload progress</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-xs text-slate-500">Processing status will update after extraction finishes.</p></div>}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white">
@@ -183,7 +183,7 @@ export default function PatientDocumentsPage() {
           {documents.map((doc) => <article key={doc.id} className="p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm font-bold text-slate-600">{doc.mime_type === 'application/pdf' ? 'PDF' : 'IMG'}</span><div className="min-w-0"><h3 className="break-words font-semibold">{doc.file_name}</h3><p className="mt-1 text-xs text-slate-500">{doc.document_date || new Date(doc.created_at).toLocaleDateString()} · {(doc.file_size_bytes / 1024).toFixed(0)} KB</p></div></div>
-              <span className={\`rounded-full px-3 py-1 text-xs font-semibold \${statusClass[doc.processing_status] || statusClass.pending}\`}>{statusLabel[doc.processing_status] || doc.processing_status.replaceAll('_', ' ')}</span>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[doc.processing_status] || statusClass.pending}`}>{statusLabel[doc.processing_status] || doc.processing_status.replaceAll('_', ' ')}</span>
             </div>
             <div className="mt-4 flex flex-wrap gap-4"><button onClick={() => void toggleExtracted(doc)} className="text-sm font-semibold text-teal-700 hover:text-teal-900">{expanded === doc.id ? 'Hide extracted data' : 'Review extracted data'}</button><button onClick={() => setSelectedExplainDoc(doc)} className="text-sm font-semibold text-indigo-700 hover:text-indigo-900">Explain with Dr. Anya</button></div>
             {expanded === doc.id && <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4">
@@ -192,9 +192,9 @@ export default function PatientDocumentsPage() {
                 const needsReview = Boolean(entity.needs_human_review) && item.review_status === 'unreviewed'
                 return <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4">
                   <div className="flex flex-wrap items-center gap-2"><span className="font-semibold capitalize">{(entity.entity_type || 'extracted item').replaceAll('_', ' ')}</span>{needsReview && <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">Human review needed</span>}<span className="text-xs text-slate-500">Status: {item.review_status.replaceAll('_', ' ')}</span></div>
-                  <p className="mt-2 text-sm">{entity.value || 'Value not confidently detected'}{entity.unit ? \` \${entity.unit}\` : ''}{entity.reference_range ? \` · reference \${entity.reference_range}\` : ''}</p>
+                  <p className="mt-2 text-sm">{entity.value || 'Value not confidently detected'}{entity.unit ? ` ${entity.unit}` : ''}{entity.reference_range ? ` · reference ${entity.reference_range}` : ''}</p>
                   {entity.review_reason && <p className="mt-1 text-xs text-amber-800">{entity.review_reason}</p>}
-                  {entity.source && <p className="mt-2 text-xs text-slate-500">Page {entity.source.page || '?'}{entity.source.quote ? \` · “\${entity.source.quote}”\` : ''}</p>}
+                  {entity.source && <p className="mt-2 text-xs text-slate-500">Page {entity.source.page || '?'}{entity.source.quote ? ` · “${entity.source.quote}”` : ''}</p>}
                   {needsReview && <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void reviewItem(doc.id, item, 'confirm')} className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-semibold text-white">Confirm</button><button onClick={() => void reviewItem(doc.id, item, 'reject')} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Reject</button></div>}
                 </div>
               })}
