@@ -31,15 +31,15 @@
 - Comparison groups by exact test label and only treats values as directly comparable when units are present and match and reference-range context is consistent. No unit conversion or automated diagnosis is performed; mismatched/missing units and context are flagged for clinician review.
 
 ## Verification and deployment notes
-- Phase 6 was merged by the project owner in PR #6. Phase 7 remains isolated on `phase-7/dr-anya-ai` pending review.
+- Phase 6 was merged by the project owner in PR #6. Phase 7 was subsequently merged by the project owner in PR #7.
 - No Supabase migration has been applied to the live project from this implementation.
 - Automated backend tests and frontend build have not been run in this environment. Validate with CI before production use.
 - Test non-doctor denial, unverified doctor denial, revoked/expired grants, invalid/expired/revoked temporary tokens, rate limiting, package membership boundaries, audit triggers, question response access, and comparison handling for missing/different units.
 - Configure backend \`SUPABASE_URL\` and \`SUPABASE_ANON_KEY\`, frontend \`VITE_API_BASE_URL\`, and install/verify OCR system dependencies as documented in Phase 5.
 
 
-## Phase 7 — Dr. Anya AI Companion (implementation on review branch)
-- Created `phase-7/dr-anya-ai` from the updated `main` after the project owner merged PR #6.
+## Phase 7 — Dr. Anya AI Companion (complete; merged in PR #7)
+- Created `phase-7/dr-anya-ai` from the updated `main` after PR #6 was merged; PR #7 was reviewed and merged by the project owner.
 - Added `backend/app/services/ai_companion.py`: provider adapter for OpenAI, Anthropic, and OpenAI-compatible local endpoints; credentials are read only from server-side `AI_PROVIDER_API_KEY`, with `AI_MODEL_NAME`, `AI_PROVIDER`, and optional `AI_BASE_URL` configuration. Keys are never accepted from request payloads or returned to clients.
 - Missing key/model configuration returns `configured: false` and the exact truthful support/configuration message. It does not simulate or fabricate an AI medical answer.
 - Added `POST /api/patient/ai/explain`. It uses the existing Supabase-verified patient JWT and database-backed patient role, checks the document against both document ID and `auth.uid()`-derived profile ID, then retrieves extracted rows constrained by the same patient and document IDs. Foreign document IDs return a generic 404.
