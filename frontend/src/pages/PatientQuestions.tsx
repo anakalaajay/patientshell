@@ -20,7 +20,7 @@ function QuestionStatus({ status }: { status: string }) {
     answered: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
     closed: 'bg-slate-100 text-slate-700 ring-slate-200',
   }
-  return <span className={\`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ring-1 ring-inset \${styles[status] || styles.open}\`}>{status.replaceAll('_', ' ')}</span>
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ring-1 ring-inset ${styles[status] || styles.open}`}>{status.replaceAll('_', ' ')}</span>
 }
 
 export default function PatientQuestionsPage() {
